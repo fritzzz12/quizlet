@@ -22,7 +22,7 @@ export async function PATCH(request: Request) {
     if ("name" in body) {
       try {
         const parsed = profileSchema.parse(body);
-        updateProfile(user.id, parsed.name);
+        await updateProfile(user.id, parsed.name);
       } catch {
         return jsonError("Enter a name between 2 and 80 characters.", 400);
       }
@@ -31,7 +31,7 @@ export async function PATCH(request: Request) {
       try {
         const parsed = passwordSchema.parse(body);
         if (!(await checkPassword(parsed.currentPassword, user.password_hash))) return jsonError("Current password is incorrect.", 400);
-        updatePasswordHash(user.id, await hashPassword(parsed.nextPassword));
+        await updatePasswordHash(user.id, await hashPassword(parsed.nextPassword));
       } catch {
         return jsonError("Passwords must be at least 8 characters.", 400);
       }
@@ -42,12 +42,12 @@ export async function PATCH(request: Request) {
           allowExternalKnowledge: "allowExternalKnowledge" in body ? body.allowExternalKnowledge : user.allow_external_knowledge === 1,
           defaultTimer: "defaultTimer" in body ? body.defaultTimer : user.default_timer === 1,
         });
-        updateSettings(user.id, parsed);
+        await updateSettings(user.id, parsed);
       } catch {
         return jsonError("Those settings could not be saved.", 400);
       }
     }
-    const fresh = getUserById(user.id);
+    const fresh = await getUserById(user.id);
     if (!fresh) return jsonError("Account not found.", 404);
     return NextResponse.json({ user: { ...publicUser(fresh), aiConfigured: aiConfigured() } });
   });

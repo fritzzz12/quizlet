@@ -3,5 +3,5 @@ import { withUser } from "@/lib/http";
 import { listLessons } from "@/lib/store";
 
 export async function GET() {
-  return withUser(async (user) => NextResponse.json({ lessons: listLessons(user.id) }));
+  return withUser(async (user) => NextResponse.json({ lessons: await listLessons(user.id) }));
 }

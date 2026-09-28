@@ -20,6 +20,8 @@ const schema = z.object({
     .max(30),
 });
 
+export const maxDuration = 60;
+
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   return withUser(async (user) => {
@@ -30,7 +32,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       return jsonError("The quiz answers could not be read.", 400);
     }
     const elapsed = body.timeTakenSeconds ?? null;
-    const result = submitAttempt({
+    const result = await submitAttempt({
       userId: user.id,
       quizId: id,
       answers: body.answers,

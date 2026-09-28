@@ -10,6 +10,8 @@ const schema = z.object({
   history: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(2000) })).max(8).optional(),
 });
 
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   return withUser(async (user) => {
     let body: z.infer<typeof schema>;
@@ -18,7 +20,7 @@ export async function POST(request: Request) {
     } catch {
       return jsonError("Enter a question about this lesson.", 400);
     }
-    const lesson = getLesson(body.lessonId, user.id);
+    const lesson = await getLesson(body.lessonId, user.id);
     if (!lesson) return jsonError("Lesson not found.", 404);
     if (lesson.content_status !== "readable") return jsonError(lesson.failure_reason || "This lesson has no readable text to study.", 422);
     const result = await answerStudyQuestion({

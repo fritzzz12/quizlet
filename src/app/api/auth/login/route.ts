@@ -13,7 +13,7 @@ const schema = z.object({
 export async function POST(request: Request) {
   try {
     const body = schema.parse(await request.json());
-    const user = getUserByEmail(body.email);
+    const user = await getUserByEmail(body.email);
     if (!user || !(await checkPassword(body.password, user.password_hash))) {
       return jsonError("Email or password is incorrect.", 401);
     }

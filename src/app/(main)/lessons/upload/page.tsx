@@ -7,6 +7,34 @@ import { PageHeader } from "@/components/ui";
 import { api } from "@/lib/client";
 import { formatBytes, formatDate } from "@/lib/text";
 
+async function uploadLocal(file: File, title: string) {
+  const form = new FormData();
+  form.set("file", file);
+  if (title.trim()) form.set("title", title.trim());
+  return api<UploadResult>("/api/lessons/upload", { method: "POST", body: form });
+}
+
+async function uploadDirect(file: File, title: string, onStatus: (message: string) => void) {
+  onStatus("Uploading the PDF…");
+  const { upload } = await import("@vercel/blob/client");
+  const blob = await upload(`lessons/${crypto.randomUUID()}.pdf`, file, {
+    access: "private",
+    handleUploadUrl: "/api/lessons/blob",
+    contentType: "application/pdf",
+    multipart: file.size > 4 * 1024 * 1024,
+  });
+  onStatus("Reading the PDF…");
+  return api<UploadResult>("/api/lessons/upload", {
+    method: "POST",
+    body: JSON.stringify({
+      pathname: blob.pathname,
+      filename: file.name,
+      size: file.size,
+      title: title.trim(),
+    }),
+  });
+}
+
 type UploadResult = {
   lessonId: string;
   title: string;
@@ -37,11 +65,9 @@ export default function UploadPage() {
     }
     setError("");
     setStatus("Uploading and reading the PDF…");
-    const form = new FormData();
-    form.set("file", file);
-    if (title.trim()) form.set("title", title.trim());
     try {
-      const data = await api<UploadResult>("/api/lessons/upload", { method: "POST", body: form });
+      const storage = await api<{ directUpload: boolean }>("/api/storage");
+      const data = storage.directUpload ? await uploadDirect(file, title, setStatus) : await uploadLocal(file, title);
       setResult(data);
       setStatus("");
     } catch (err) {

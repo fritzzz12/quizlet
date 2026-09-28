@@ -18,7 +18,7 @@ function cleanPage(text: string): string {
 }
 
 export async function extractPdf(data: Uint8Array): Promise<{ pageCount: number; pages: string[] }> {
-  const pdf = await getDocumentProxy(data);
+  const pdf = await getDocumentProxy(Uint8Array.from(data));
   try {
     const result = await extractText(pdf, { mergePages: false });
     const raw = Array.isArray(result.text) ? result.text : [String(result.text || "")];

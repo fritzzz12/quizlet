@@ -23,6 +23,8 @@ const schema = z.object({
   allowExternal: z.boolean().optional(),
 });
 
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   return withUser(async (user) => {
     let body: z.infer<typeof schema>;
@@ -31,7 +33,7 @@ export async function POST(request: Request) {
     } catch {
       return jsonError("Check the quiz settings and try again.", 400);
     }
-    const lesson = getLesson(body.lessonId, user.id);
+    const lesson = await getLesson(body.lessonId, user.id);
     if (!lesson) return jsonError("Lesson not found.", 404);
     if (lesson.content_status !== "readable" || lesson.processing_status !== "ready") {
       return jsonError(lesson.failure_reason || "This lesson cannot be used to generate a reliable quiz.", 422);
@@ -63,7 +65,7 @@ export async function POST(request: Request) {
       count: requested,
       types,
       difficultyCounts: counts,
-      avoidTexts: avoidQuestionTexts(lesson.id),
+      avoidTexts: await avoidQuestionTexts(lesson.id),
       topic: body.topic,
       allowExternal,
     });
@@ -72,7 +74,7 @@ export async function POST(request: Request) {
     }
     const label = difficulty === "mixed" ? "Mixed" : difficulty[0].toUpperCase() + difficulty.slice(1);
     const title = body.topic ? `${lesson.title}: ${body.topic}` : `${lesson.title} · ${label}`;
-    const quizId = saveGeneratedQuiz({
+    const quizId = await saveGeneratedQuiz({
       userId: user.id,
       lessonId: lesson.id,
       title: title.slice(0, 140),

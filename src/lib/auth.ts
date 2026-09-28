@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
-import { getDb } from "@/lib/db";
+import { one } from "@/lib/db";
 import { createUser } from "@/lib/store";
 import { SESSION_COOKIE, signSession } from "@/lib/session";
 
@@ -41,19 +41,19 @@ export async function checkPassword(password: string, hash: string): Promise<boo
   return bcrypt.compare(password, hash);
 }
 
-export function getUserById(id: string): UserRow | undefined {
-  return getDb().prepare("SELECT * FROM users WHERE id = ?").get(id) as UserRow | undefined;
+export function getUserById(id: string) {
+  return one<UserRow>("SELECT * FROM users WHERE id = ?", [id]);
 }
 
-export function getUserByEmail(email: string): UserRow | undefined {
-  return getDb().prepare("SELECT * FROM users WHERE email = ?").get(email.toLowerCase()) as UserRow | undefined;
+export function getUserByEmail(email: string) {
+  return one<UserRow>("SELECT * FROM users WHERE email = ?", [email.toLowerCase()]);
 }
 
-export function getOrCreateLocalUser(): UserRow {
-  const existing = getUserByEmail(LOCAL_EMAIL);
+export async function getOrCreateLocalUser(): Promise<UserRow> {
+  const existing = await getUserByEmail(LOCAL_EMAIL);
   if (existing) return existing;
-  const id = createUser({ name: "Student", email: LOCAL_EMAIL, passwordHash: "local" });
-  const created = getUserById(id);
+  const id = await createUser({ name: "Student", email: LOCAL_EMAIL, passwordHash: "local" });
+  const created = await getUserById(id);
   if (!created) throw new Error("Could not open the study desk.");
   return created;
 }

@@ -15,10 +15,10 @@ const schema = z.object({
 export async function POST(request: Request) {
   try {
     const body = schema.parse(await request.json());
-    if (getUserByEmail(body.email)) return jsonError("An account with that email already exists.", 409);
-    const id = createUser({ name: body.name, email: body.email, passwordHash: await hashPassword(body.password) });
+    if (await getUserByEmail(body.email)) return jsonError("An account with that email already exists.", 409);
+    const id = await createUser({ name: body.name, email: body.email, passwordHash: await hashPassword(body.password) });
     await setSessionCookie(id);
-    const user = getUserById(id);
+    const user = await getUserById(id);
     if (!user) return jsonError("Could not create the account.", 500);
     return NextResponse.json({ user: { ...publicUser(user), aiConfigured: aiConfigured() } });
   } catch (error) {
