@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/client";
 import type { UserProfile } from "@/lib/types";
@@ -25,20 +25,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
 function ShellFrame({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
   const [user, setUser] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     api<{ user: UserProfile }>("/api/auth/me")
       .then((data) => setUser(data.user))
-      .catch(() => router.push("/login"));
-  }, [router]);
-
-  async function signOut() {
-    await api("/api/auth/logout", { method: "POST" });
-    router.push("/login");
-    router.refresh();
-  }
+      .catch(() => setUser(null));
+  }, []);
 
   return (
     <div className="min-h-screen md:grid md:grid-cols-[240px_1fr]">
@@ -60,7 +53,6 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
         <div className="space-y-2 text-sm">
           <Link href="/profile" className="block rounded-2xl px-3 py-2 text-white/80 hover:bg-white/10">Profile</Link>
           <Link href="/settings" className="block rounded-2xl px-3 py-2 text-white/80 hover:bg-white/10">Settings</Link>
-          <button className="w-full rounded-2xl px-3 py-2 text-left text-white/80 hover:bg-white/10" onClick={signOut}>Sign out</button>
           {user ? <p className="px-3 pt-2 text-xs text-white/50">{user.name}</p> : null}
         </div>
       </aside>

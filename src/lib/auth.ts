@@ -1,7 +1,10 @@
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { getDb } from "@/lib/db";
-import { readSession, SESSION_COOKIE, signSession } from "@/lib/session";
+import { createUser } from "@/lib/store";
+import { SESSION_COOKIE, signSession } from "@/lib/session";
+
+const LOCAL_EMAIL = "local@folio.app";
 
 export type UserRow = {
   id: string;
@@ -46,13 +49,17 @@ export function getUserByEmail(email: string): UserRow | undefined {
   return getDb().prepare("SELECT * FROM users WHERE email = ?").get(email.toLowerCase()) as UserRow | undefined;
 }
 
+export function getOrCreateLocalUser(): UserRow {
+  const existing = getUserByEmail(LOCAL_EMAIL);
+  if (existing) return existing;
+  const id = createUser({ name: "Student", email: LOCAL_EMAIL, passwordHash: "local" });
+  const created = getUserById(id);
+  if (!created) throw new Error("Could not open the study desk.");
+  return created;
+}
+
 export async function requireUser(): Promise<UserRow> {
-  const jar = await cookies();
-  const userId = await readSession(jar.get(SESSION_COOKIE)?.value);
-  if (!userId) throw new AuthError();
-  const user = getUserById(userId);
-  if (!user) throw new AuthError();
-  return user;
+  return getOrCreateLocalUser();
 }
 
 function sessionCookieOptions(maxAge: number) {
